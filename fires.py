@@ -72,7 +72,33 @@ class discriminator(nn.Module):
 
         return x
 
-def train_GAN():
+def train_epoch(real_data, generator, discriminator, g_optimizer, d_optimizer, epoch, output_directory):
+    N = real_data.size(0)
+    # 1. Train Discriminator
+    real_data = images_to_vectors(real_data)
+    # Generate that fake ish and detach 
+    # (so gradients are not calculated for generator)
+    fake_data = generator(noise(N)).detach()
+    # Train D
+    d_error, d_pred_real, d_pred_fake = train_discriminator(d_optimizer,
+                                                            real_data, fake_data)
+
+    # 2. Train Generator
+    # Generate fake data
+    fake_data = generator(noise(N))
+    # Train G
+    g_error = train_generator(g_optimizer, fake_data)
+
+    # Display Progress every few batches
+    if (epoch) % 100 == 0:
+        test_images = vectors_to_images(generator(test_noise))
+        test_images = test_images.data
+
+        for i, image in enumerate(test_images):
+            torchvision.utils.save_image(image, os.path.join(output_directory, f'image_{i}.png'))
+
+generator = Generator()
+discriminator = Discriminator()
     # Implement the training of the GAN here
     pass
 
@@ -85,7 +111,6 @@ def noise(size):
     return n
 
 def video_to_frames(video, path_output_dir):
-    def video_to_frames(video, path_output_dir):
     if not os.path.isfile(video):
         print("File path {} does not exist bro gtfo. Exiting...".format(video))
         return
